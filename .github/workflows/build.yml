@@ -1,1 +1,58 @@
+name: Build-TWRP-Boot-LG7n
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build TWRP Boot Image for Tecno Pova 4 (LG7n)
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up build environment
+        run: |
+          sudo apt update -y
+          sudo apt install git-core gnupg flex bison gperf build-essential zip curl zlib1g-dev \
+          gcc-multilib g++-multilib libc6-dev-i386 libncurses5-dev libncurses5 libsdl1.2-dev \
+          libssl-dev libxml2 libxml2-utils xsltproc unzip fontconfig openjdk-11-jdk -y
+          curl https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo
+          sudo chmod a+x /usr/local/bin/repo
+
+      - name: Initialize TWRP source
+        run: |
+          mkdir ~/twrp && cd ~/twrp
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1
+          repo sync -j4
+
+      - name: Clone Device, Kernel and Vendor Trees
+        run: |
+          cd ~/twrp
+          git clone https://github.com/Anything-at-25-00/android_device_tecno_LG7n.git device/tecno/LG7n
+          git clone https://github.com/Anything-at-25-00/device_tecno_lg7n_kernel.git kernel/tecno/lg7n
+          git clone https://github.com/Anything-at-25-00/vendor_tecno_LG7n.git vendor/tecno/LG7n || true
+
+      - name: Configure Board for Boot Image
+        run: |
+          cd ~/twrp
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export LC_ALL=C
+          echo "TARGET_PREBUILT_KERNEL := kernel/tecno/lg7n/Image.gz-dtb" >> device/tecno/LG7n/BoardConfig.mk
+          echo "BOARD_INCLUDE_RECOVERY_RAMDISK_IN_BOOTIMAGE := true" >> device/tecno/LG7n/BoardConfig.mk
+          echo "BOARD_BUILD_SYSTEM_ROOT_IMAGE := true" >> device/tecno/LG7n/BoardConfig.mk
+          echo "BOARD_USES_RECOVERY_AS_BOOT := true" >> device/tecno/LG7n/BoardConfig.mk
+
+      - name: Build TWRP Boot Image
+        run: |
+          cd ~/twrp
+          . build/envsetup.sh
+          lunch omni_LG7n-eng
+          mka bootimage -j$(nproc)
+
+      - name: Upload Boot Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: TWRP-Boot-LG7n
+          path: ~/twrp/out/target/product/LG7n/boot.img
