@@ -1,1 +1,39 @@
+name: Build TWRP Boot for Tecno Pova 4 (LG7n)
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout manifest
+      run: |
+        sudo apt update
+        sudo apt install git curl repo bc bison build-essential python3 python3-pip zip clang libssl-dev openssl openjdk-17-jdk -y
+        mkdir ~/twrp && cd ~/twrp
+        repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1
+        repo sync -j$(nproc) --force-sync
+
+    - name: Clone device tree
+      run: |
+        cd ~/twrp
+        git clone https://github.com/BARKAO4242/android_device_tecno_TECNO-LG7n1.git device/tecno/LG7n
+
+    - name: Set up build environment
+      run: |
+        cd ~/twrp
+        source build/envsetup.sh
+        lunch omni_LG7n-eng
+
+    - name: Build boot image
+      run: |
+        cd ~/twrp
+        make bootimage -j$(nproc)
+
+    - name: Upload boot.img
+      uses: actions/upload-artifact@v4
+      with:
+        name: boot-img-LG7n
+        path: out/target/product/LG7n/boot.img
