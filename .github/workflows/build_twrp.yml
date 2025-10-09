@@ -25,12 +25,20 @@ jobs:
           python3 python3-pip openjdk-17-jdk
 
       - name: Install repo tool
+        shell: bash
         run: |
           mkdir -p ~/bin
           curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
           echo "$HOME/bin" >> $GITHUB_PATH
+          export PATH="$HOME/bin:$PATH"
           repo --version
+        
+          
+          
+          
+          
+          
         
           
           
