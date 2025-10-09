@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout workflow repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
@@ -52,7 +52,7 @@ jobs:
         m bootimage
 
     - name: Upload boot.img
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: TWRP_boot_LG7n
         path: $REPO_DIR/out/target/product/LG7n/boot.img
