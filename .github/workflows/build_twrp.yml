@@ -1,5 +1,4 @@
-
-name: Build TWRP Boot for Tecno Pova 4
+name: Build TWRP 12.1 for TECNO-LG7n
 
 on:
   push:
@@ -7,28 +6,34 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  REPO_DIR: ${{ github.workspace }}/twrp
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      REPO_DIR: ${{ github.workspace }}/twrp
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - name: Checkout
+    - name: Checkout Workflow
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Setup dependencies
       run: |
-        sudo apt update
-        sudo apt install -y git curl wget unzip zip openjdk-17-jdk python3 python3-pip clang make
+        sudo apt-get update
+        sudo apt-get install -y git curl wget unzip zip clang make python3 python3-pip openjdk-17-jdk bc bison flex libssl-dev libncurses5-dev libncurses-dev
 
     - name: Setup repo tool
       run: |
         mkdir -p ~/bin
         curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
-        echo "PATH=${HOME}/bin:$PATH" >> $GITHUB_ENV
-        repo --version
+        echo "${HOME}/bin" >> $GITHUB_PATH
+
+    - name: Verify repo
+      run: repo --version
 
     - name: Initialize TWRP repo
       run: |
@@ -36,7 +41,7 @@ jobs:
         cd $REPO_DIR
         repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
 
-    - name: Sync repo
+    - name: Sync TWRP repo
       run: |
         cd $REPO_DIR
         repo sync -j8 --force-sync
@@ -46,9 +51,15 @@ jobs:
         cd $REPO_DIR
         git clone https://github.com/BARKAO4242/android_device_tecno_TECNO-LG7n1.git device/tecno/LG7n
 
-    - name: Build TWRP boot image
+    - name: Build TWRP boot.img
       run: |
         cd $REPO_DIR
         source build/envsetup.sh
         lunch omni_LG7n-eng
         m bootimage
+
+    - name: Upload boot.img artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TWRP-boot
+        path: $REPO_DIR/out/target/product/LG7n/boot.img
