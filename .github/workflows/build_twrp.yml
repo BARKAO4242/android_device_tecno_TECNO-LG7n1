@@ -1,4 +1,5 @@
-name: Build TWRP Boot.img
+
+name: Build TWRP Boot for Tecno Pova 4
 
 on:
   push:
@@ -7,62 +8,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-boot:
-    runs-on: ubuntu-24.04
+  build:
+    runs-on: ubuntu-latest
     env:
       REPO_DIR: ${{ github.workspace }}/twrp
 
     steps:
-    - name: Checkout workflow
+    - name: Checkout
       uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y git curl unzip zip openjdk-17-jdk python3 python3-pip clang make
-        sudo apt clean
-        sudo rm -rf /var/lib/apt/lists/*
+        sudo apt install -y git curl wget unzip zip openjdk-17-jdk python3 python3-pip clang make
 
     - name: Setup repo tool
       run: |
         mkdir -p ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
-        export PATH=~/bin:$PATH
+        echo "PATH=${HOME}/bin:$PATH" >> $GITHUB_ENV
         repo --version
 
-    - name: Initialize TWRP manifest
+    - name: Initialize TWRP repo
       run: |
         mkdir -p $REPO_DIR
         cd $REPO_DIR
         repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
-        repo sync -j4 --depth=1
+
+    - name: Sync repo
+      run: |
+        cd $REPO_DIR
+        repo sync -j8 --force-sync
 
     - name: Clone device tree
       run: |
         cd $REPO_DIR
-        git clone --depth=1 https://github.com/BARKAO4242/android_device_tecno_TECNO-LG7n1.git device/tecno/LG7n
+        git clone https://github.com/BARKAO4242/android_device_tecno_TECNO-LG7n1.git device/tecno/LG7n
 
-    - name: Setup build environment
+    - name: Build TWRP boot image
       run: |
         cd $REPO_DIR
-        source build/envsetup.sh || true
-        export PATH=~/bin:$PATH
-
-    - name: Lunch device
-      run: |
-        cd $REPO_DIR
-        export TARGET_DEVICE=LG7n
-        export BUILD_TYPE=bootimage
-        echo "Lunch setup skipped for minimal build"
-
-    - name: Build boot.img
-      run: |
-        cd $REPO_DIR
-        make bootimage -j4
-
-    - name: Upload boot.img
-      uses: actions/upload-artifact@v4
-      with:
-        name: boot-img
-        path: $REPO_DIR/out/target/product/LG7n/boot.img
+        source build/envsetup.sh
+        lunch omni_LG7n-eng
+        m bootimage
