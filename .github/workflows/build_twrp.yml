@@ -52,11 +52,13 @@ jobs:
           
     
 
-      - name: Initialize TWRP Repo
+      - name: Initialize repo
         run: |
-          mkdir -p $REPO_DIR
           cd $REPO_DIR
-          repo init -u https://github.com/TeamWin/android_manifest.git -b $TWRP_BRANCH
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
+        
+          
+        
 
       - name: Sync Repo
         run: |
